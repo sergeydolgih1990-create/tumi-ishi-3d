@@ -1,0 +1,348 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Туми Иши</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --ground: #e9edee;
+    --panel: #f7f9f9;
+    --ink: #13191c;
+    --muted: #5d6a6f;
+    --line: #c6d0d2;
+    --accent: #1f6f8b;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #101618;
+      --panel: #182023;
+      --ink: #e8eded;
+      --muted: #94a3a8;
+      --line: #2b383c;
+      --accent: #5bb2cf;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #101618;
+    --panel: #182023;
+    --ink: #e8eded;
+    --muted: #94a3a8;
+    --line: #2b383c;
+    --accent: #5bb2cf;
+    color-scheme: dark;
+  }
+  html { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .wrap {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px 16px 24px;
+    max-width: 1180px;
+    margin: 0 auto;
+    box-sizing: border-box;
+  }
+  header h1 { font-size: 21px; font-weight: 600; margin: 0 0 4px; text-wrap: balance; }
+  header p { margin: 0; color: var(--muted); font-size: 14px; max-width: 70ch; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .row .label { font-size: 13px; color: var(--muted); margin-right: 2px; }
+  .row button {
+    font: inherit;
+    font-size: 14px;
+    padding: 7px 13px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--panel);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .row button[aria-pressed="true"] {
+    border-color: var(--accent);
+    box-shadow: inset 0 -2px 0 var(--accent);
+    font-weight: 500;
+  }
+  .row button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .stage {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    min-height: 380px;
+    height: 60vh;
+    overflow: hidden;
+  }
+  .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hint {
+    position: absolute;
+    left: 12px;
+    bottom: 10px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    background: color-mix(in srgb, var(--panel) 82%, transparent);
+    padding: 3px 7px;
+    border-radius: 2px;
+  }
+  .toggles { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+  .toggles label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+  /* клетки разделены своими рамками, а не просветом фона: иначе неполный ряд
+     оставлял пустую серую клетку */
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 0;
+  }
+  .facts div {
+    padding: 10px 14px;
+    box-shadow: 1px 0 0 var(--line), 0 1px 0 var(--line);
+  }
+  .facts dt {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin: 0 0 2px;
+  }
+  .facts dd {
+    margin: 0;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 17px;
+    font-variant-numeric: tabular-nums;
+  }
+  .note { color: var(--muted); font-size: 13px; margin: 0; max-width: 72ch; }
+  @media (max-width: 640px) { .stage { min-height: 300px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1 id="t-h1">Туми Иши</h1>
+    <p id="t-lead"></p>
+  </header>
+
+  <div class="row" id="variants" role="group" aria-label="Что показать"></div>
+
+  <div class="stage">
+    <canvas id="c"></canvas>
+    <div class="hint">тяните мышью — поворот · колесо — масштаб</div>
+  </div>
+
+  <div class="row" role="group" aria-label="Ракурс">
+    <span class="label">Ракурс</span>
+    <button type="button" data-view="34">3/4</button>
+    <button type="button" data-view="front">спереди</button>
+    <button type="button" data-view="side">сбоку</button>
+    <button type="button" data-view="top">сверху</button>
+    <button type="button" data-view="close">крупно</button>
+  </div>
+
+  <div class="toggles">
+    <label><input type="checkbox" id="white"> белое масло</label>
+    <label><input type="checkbox" id="spin"> автоповорот</label>
+  </div>
+
+  <dl class="facts" id="facts"></dl>
+
+  <p class="note" id="desc"></p>
+  <p class="note" id="t-note"></p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>window.НАБОР = {"шаг": 0.01, "варианты": [{"подпись": "Башня", "центр": [-6.337824626765553, -21.061780639737023, 103.37363206841412], "факты": [["Камней", "10"], ["Масса набора", "около 570 г"], ["Размер", "45–150 мм"], ["Высота башни", "230 мм"], ["Запас устойчивости", "не меньше 6 мм"], ["Наклон опор", "до 9°"]], "описание": "Брус лежит, на нём башня из шести камней; колонна стоит на торце, вторая колонна и самоцвет лежат рядом. Каждый камень поставлен расчётом: перебраны грани и повороты, центр тяжести всего, что выше, проверен над площадкой контакта.", "позиции": "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", "индексы": "eNoN1flDCAYchvH3/aJCkZtCoVCoUG6FDoQKoVDIfVaoUAgVkpCNbc5tjs2xYY455p5j5hjbsM011zbHNvc19v7wfP6FByAMUMVQHCXgIB3gKB3hhJIohdKyNJylM1ykC8qgLFxRTpZDeVkeFVARlVBZVkYVVEU1uEk3uEt3VJfVUQM14QFP1EJt1JF14CW94C29URf1UB8+0ge+0hcNZAM0RCP4wV/6I0AGoLFsjCZoikAEoRmao4VsgZayJVqhNdqgrWyLYBmMEBmCdmiPDgiVoQiTYQiX4YiQEeiITuiMSBmJLuiKboiSUYiW0YhBd/RAT9kTsTIWvdAbfRAn4xAv49EX/dAfCTIBiRiAgRgkByEJgzEEQ+VQDJPDMFwOxwiMxCiMxhiMxTg5DskyGSkyBakyFeMxARORJtOQLtORITMwCZMxBZkyE1kyC1MxDdORLbMxAzMxCzkyB7kyF3mYjTmYK+ciX+ZjHgowH4WyEAvkAizEIhRhsVyM9/A+lmCpXIoP8CE+wjK5DMvlcqyQK7ASq7AaH+MTfIo1cg3WyrVYJ9dhvVyPz/A5NmCj3IhNchM2y834Al9iC7bKrdgmt+ErbMcO7JQ7sUvuwtfYjT3YK/din9yHb7AfB3BQHsQheQiH5WEcwVF8i2PyGI7L4ziBk/gOp+QpfI/TOIOz8izOyXP4AedxAT/iJ/yMi/IiLslLuCwv4xf8it9wRV7BVXkV1+Q1XMcN/I6b8iZuyVu4LW/jDu7iD/yJv3AP9+V9PJAP8FA+xN/4B//ikXyEx/IxnuApnuG5fI4X8gVeypd4JV/hNd7gP7zFO4CksRiLy+IsIUvQQTrQUTrSSTqxJEuxNJ2lM12kC8vIMiwry9JVurIcy7MCK7ISK7MKq7Ia3aQb3VmdNVhT1qSH9KCn9GQt1mYdekkvektv1pV1WY/16UNf6csGbMhG9JN+9Jf+DJABbMwmbMpAGcggGcRmshmbswVbspVsxdZsw7YMlsEMkSFsx/bswFAZyjAZxnAZzggZwY7sxM6MlJHsIruwq+zKboxiNGNkDLuzB3syVsayl+zF3uzDOMbLePZlP/ZngkxgokzkAA7kICbJJA6WgzmEQzmMwzmCIzlKjuJoOZpj5BiO5TgmM0WmMFWmcrwczwmcyDSmy3RmyAxOkpM4mVOYySyZxamcxunMltmcIWdwJmcxh7kyl3kyj7PlbM6RcziX+ZzHAlnA+XI+C2UhF3AhF7FIFnEx3+P7XCKXcKlcyg/4IT/iMi7nCq6UK7lKruJquZof8xN+yjVyDdfKtVwn13E9P+Pn3CA3cKPcyE1yEzfzC37JLXILt3Ibv+J2uZ075A7u5C5+zd1yN/fIPdzLffyG++V+HpAHeJCHeJhH5BEelUf5LY/xOE/IEzwpT/I7nuL3PC1P84w8w7M8xx94Xp7nBXmBP/In/syL8iIvyUu8zF/4K3/jFV7lNXmN1+V13pA3+Dtv8hZvy9u8I+/wrrzLP/gn/+I9eY/35X0+kA/4kH/zH/7LR3zMJ/IJn8qnfCaf8Tlf8CVfyVd8LV/zjXzD//iW7zTOt4qSZtKsmBW3EuYgHcxROpqTdLKSVspKm7N0NhcrY2XNVbpaOStvFayirGiVZCWrbFWsqlWT1cxNupm7dLfqVsNqmof0ME/pabWsttUxL/O2ulZP1rP6sr75SB/ztQbW0BrJRuYn/cxf+luADLDG1sSaWqAMtCAZZM2subWwltbKWlsb2cbayrYWLIMtxNpZe+sgO1ioDLUwGWbhFmEdrZPsZJ1lZ4uUkdbFulo3i5JRFi2jLUbGWHfrYT0tVsZaL+ttfSxOxlm89bV+1l/2twSZYIky0QbYQBtkSTLJBsvBNkQOsaE2zIbbCDnCRtooG21jbKyNs2SZbCkyxVJlqo23CTbR0mSapct0y5AZNskm2xTLlJmWJbNsqpxq02y6ZdsMm2mzLEfmWK7MtTyZZ7Ntjs21fJlv8+Q8K5AFNt8KbYEtlAttkVxkRbLIFtv/tlkfUw==", "биты_индексов": 16, "сжато": true}, {"подпись": "Все камни", "центр": [0.0, 4.844547475308666, 18.04615676950225], "факты": [["Камней", "10"], ["Масса набора", "около 570 г"], ["Размер", "45–150 мм"], ["Устойчивых граней", "7–14 у камня"], ["Толщина", "до 40 мм"], ["Грани пар", "расходятся на 5–12°"]], "описание": "Каждый камень лежит на своей самой устойчивой грани. Кристаллы вытянуты вдоль длины, на кончиках — площадка, у колонн — плоский торец, чтобы стоять.", "позиции": "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", "индексы": "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", "биты_индексов": 16, "сжато": true}], "начать_с": 0, "шапка": {"title": "Туми Иши — Кристаллы-01", "h1": "Туми Иши — пробный набор «Кристаллы-01»", "lead": "10 камней-кристаллов из дуба, 45–150 мм. Своя геометрия по мотивам референса: вытянутые призмы, противоположные грани расходятся на 5–12°, на кончиках — площадка. Форма под трёхосевой фрезер с переворотом: поднутрений нет.", "note": "Масса — дуб 700 кг/м³, без покрытия. Это эскиз формы для обсуждения, не модель для станка."}};</script>
+<script>
+(function () {
+  var ДАННЫЕ = window.НАБОР || { варианты: [] };
+  // шапка страницы может приходить с данными (клиентская страница)
+  var ШАПКА = ДАННЫЕ["шапка"];
+  if (ШАПКА) {
+    if (ШАПКА.title) document.title = ШАПКА.title;
+    [["t-h1", "h1"], ["t-lead", "lead"], ["t-note", "note"]].forEach(function (p) {
+      var el = document.getElementById(p[0]);
+      if (el && ШАПКА[p[1]] != null) el.textContent = ШАПКА[p[1]];
+    });
+  }
+  var ВАРИАНТЫ = ДАННЫЕ["варианты"];
+
+  var canvas = document.getElementById("c");
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(34, 1, 1, 5000);
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x9aa7ab, 0.7));
+  var key = new THREE.DirectionalLight(0xffffff, 0.9);
+  key.position.set(-260, -420, 520);
+  scene.add(key);
+  var fill = new THREE.DirectionalLight(0xffffff, 0.45);
+  fill.position.set(380, -120, 220);
+  scene.add(fill);
+  var rim = new THREE.DirectionalLight(0xffffff, 0.35);
+  rim.position.set(0, 400, 300);
+  scene.add(rim);
+
+  // стол: сетка 10 мм в плоскости Z = 0
+  var grid = new THREE.GridHelper(600, 60, 0x8a979c, 0x8a979c);
+  grid.rotation.x = Math.PI / 2;
+  grid.material.transparent = true;
+  grid.material.opacity = 0.28;
+  scene.add(grid);
+
+  // дуб под прозрачным маслом и под белым: цвет меняется галочкой
+  var woodMat = new THREE.MeshStandardMaterial({ color: 0xc49a66, roughness: 0.75, metalness: 0.0 });
+  document.getElementById("white").addEventListener("change", function (e) {
+    woodMat.color.setHex(e.target.checked ? 0xe4ddd0 : 0xc49a66);
+  });
+
+  function buffer(b64) {
+    var bin = atob(b64);
+    var buf = new ArrayBuffer(bin.length);
+    var view = new Uint8Array(buf);
+    for (var i = 0; i < bin.length; i++) view[i] = bin.charCodeAt(i);
+    return buf;
+  }
+
+  // геометрия индексированная; у подставки вершины на острых рёбрах разведены при выгрузке,
+  // поэтому плоские грани остаются плоскими, а скругления — гладкими.
+  // Координаты лежат целыми шагами (int16), индексы — uint16 или uint32: так страница легче.
+  var ШАГ = ДАННЫЕ["шаг"] || 0.01;
+  // сетки сжаты deflate: распаковываем все один раз при открытии, дальше работаем с буферами
+  function распаковать1(b64, packed) {
+    var buf = buffer(b64);
+    if (!packed) return Promise.resolve(buf);
+    var stream = new Blob([buf]).stream().pipeThrough(new DecompressionStream("deflate"));
+    return new Response(stream).arrayBuffer();
+  }
+  function распаковать(d) {
+    if (!d) return Promise.resolve();
+    return Promise.all([распаковать1(d["позиции"], d["сжато"]),
+                        распаковать1(d["индексы"], d["сжато"])]).then(function (r) {
+      d._pos = r[0]; d._idx = r[1];
+    });
+  }
+  function geometryFrom(d) {
+    var q = new Int16Array(d._pos);
+    var pos = new Float32Array(q.length);
+    for (var i = 0; i < q.length; i++) pos[i] = q[i] * ШАГ;
+    var idx = d["биты_индексов"] === 32 ? new Uint32Array(d._idx) : new Uint16Array(d._idx);
+    var geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    geo.setIndex(new THREE.BufferAttribute(idx, 1));
+    geo.computeVertexNormals();
+    return geo;
+  }
+
+  var standMesh = null, центр = [0, 10, 10];
+  function показать(i) {
+    var d = ВАРИАНТЫ[i];
+    if (!d._pos) return;                      // ещё распаковывается
+    if (standMesh) { scene.remove(standMesh); standMesh.geometry.dispose(); }
+    standMesh = new THREE.Mesh(geometryFrom(d), woodMat);
+    scene.add(standMesh);
+    центр = d["центр"] || центр;
+    document.getElementById("facts").innerHTML =
+      (d["факты"] || []).map(function (f) { return факт(f[0], f[1]); }).join("");
+    document.getElementById("desc").textContent = d["описание"] || "";
+    Array.prototype.forEach.call(document.querySelectorAll("#variants button"), function (b, k) {
+      b.setAttribute("aria-pressed", k === i ? "true" : "false");
+    });
+  }
+
+  function число(v) { return String(Math.round(v * 10) / 10).replace(".", ","); }
+  function факт(k, v) { return "<div><dt>" + k + "</dt><dd>" + v + "</dd></div>"; }
+
+  ВАРИАНТЫ.forEach(function (d, i) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.textContent = d["подпись"] || d["имя"];
+    b.addEventListener("click", function () { показать(i); });
+    document.getElementById("variants").appendChild(b);
+  });
+
+  // орбита вокруг середины композиции
+  var азимут = -2.0, высота = 0.32, дистанция = 640;
+  var РАКУРСЫ = {
+    "34": [-2.0, 0.32, 640],
+    "front": [-Math.PI / 2, 0.08, 640],
+    "side": [0, 0.08, 640],
+    "top": [-Math.PI / 2, 1.5, 720],
+    "close": [-2.2, 0.28, 330]
+  };
+  Array.prototype.forEach.call(document.querySelectorAll("[data-view]"), function (b) {
+    b.addEventListener("click", function () {
+      var r = РАКУРСЫ[b.getAttribute("data-view")];
+      азимут = r[0]; высота = r[1]; дистанция = r[2];
+      document.getElementById("spin").checked = false;
+    });
+  });
+
+  var drag = null;
+  function point(e) { var t = e.touches ? e.touches[0] : e; return { x: t.clientX, y: t.clientY }; }
+  canvas.addEventListener("pointerdown", function (e) { drag = point(e); canvas.setPointerCapture(e.pointerId); });
+  canvas.addEventListener("pointermove", function (e) {
+    if (!drag) return;
+    var p = point(e);
+    азимут -= (p.x - drag.x) * 0.008;
+    высота = Math.max(-1.2, Math.min(1.5, высота + (p.y - drag.y) * 0.006));
+    drag = p;
+  });
+  ["pointerup", "pointercancel", "pointerleave"].forEach(function (ev) {
+    canvas.addEventListener(ev, function () { drag = null; });
+  });
+  canvas.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    дистанция = Math.max(70, Math.min(1100, дистанция * (1 + Math.sign(e.deltaY) * 0.1)));
+  }, { passive: false });
+
+  function resize() {
+    var w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    if (canvas.width !== w * renderer.getPixelRatio() || canvas.height !== h * renderer.getPixelRatio()) {
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+  }
+
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var цель = new THREE.Vector3();
+  function tick() {
+    resize();
+    if (document.getElementById("spin").checked && !reduced) азимут += 0.003;
+    цель.set(центр[0], центр[1], центр[2]);
+    camera.position.set(
+      цель.x + дистанция * Math.cos(высота) * Math.cos(азимут),
+      цель.y + дистанция * Math.cos(высота) * Math.sin(азимут),
+      цель.z + дистанция * Math.sin(высота)
+    );
+    camera.up.set(0, 0, 1);
+    camera.lookAt(цель);
+    renderer.render(scene, camera);
+    requestAnimationFrame(tick);
+  }
+
+  if (ВАРИАНТЫ.length) {
+    Promise.all(ВАРИАНТЫ.map(распаковать))
+      .then(function () {
+        показать(ДАННЫЕ["начать_с"] != null ? ДАННЫЕ["начать_с"] : ВАРИАНТЫ.length - 1);
+        tick();
+      })
+      .catch(function (e) {
+        document.getElementById("desc").textContent = "Модели не распаковались: " + e;
+      });
+  }
+  else { document.getElementById("desc").textContent = "Модели не загрузились."; }
+})();
+</script>
